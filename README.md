@@ -3,9 +3,9 @@ Nginx With All Official Modules And Some Third Party Modules For Debian
 
 # Third Party Modules
 ```
-Jemalloc
-Redis
-OpenSSL
+Jemalloc (Share Library)
+Redis (Software)
+OpenSSL (Just Build Into The Nginx)
 Nginx Module:Cache-Purge
 Nginx Module:Brotli
 Nginx Module:PageSpeed
