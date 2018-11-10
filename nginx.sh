@@ -82,15 +82,15 @@ tar -xjvf jemalloc-${JEMALLOC_VERSION}.tar.bz2
 JEMALLOC_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*jemalloc-${JEMALLOC_VERSION}*")
 
 #Download Redis latest version
-REDIS_VERSION=$(curl -sS --fail https://redis.io/download | \
-  grep -o '/releases/redis-[a-zA-Z0-9.]*[.]tar[.]gz' | \
-  sed -e 's~^/releases/redis-~~' -e 's~\.tar\.gz$~~' | \
+REDIS_VERSION=$(curl -sS --fail https://github.com/antirez/redis/releases | \
+  grep -o '/antirez/redis/archive/[a-zA-Z0-9.]*[.]tar[.]gz' | \
+  sed -e 's~^/antirez/redis/archive/~~' -e 's~\.tar\.gz$~~' | \
   sed '/alpha.*/Id' | \
   sed '/beta.*/Id' | \
   sed '/rc.*/Id' | \
   sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -g | \
   tail -n 1)
-wget http://download.redis.io/releases/redis-${REDIS_VERSION}.tar.gz
+wget -O redis-${REDIS_VERSION}.tar.gz https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz
 tar -xvzf redis-${REDIS_VERSION}.tar.gz
 REDIS_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*redis-${REDIS_VERSION}*")
 
@@ -446,7 +446,7 @@ apt install -y tzdata
 apt clean
 
 #Restore run dependencies
-tar -kxpPf run-deps.tar
+tar --skip-old-files -xpPf run-deps.tar
 
 #Start Redis
 systemctl stop redis
