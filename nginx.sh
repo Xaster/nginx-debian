@@ -446,7 +446,7 @@ apt install -y tzdata
 apt clean
 
 #Restore run dependencies
-tar -kxvpPf run-deps.tar >/dev/null 2>&1
+tar -kxpPf run-deps.tar
 
 #Start Redis
 systemctl stop redis
