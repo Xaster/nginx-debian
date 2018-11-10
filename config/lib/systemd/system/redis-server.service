@@ -1,0 +1,17 @@
+[Unit]
+Description=Redis - Advanced key-value store
+After=network.target
+Documentation=http://redis.io/documentation
+
+[Service]
+Type=forking
+PIDFile=/var/run/redis/redis-server.pid
+ExecStart=/usr/bin/redis-server /etc/redis/redis.conf
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target
+Alias=redis.service
