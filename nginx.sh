@@ -11,7 +11,6 @@ apt install -y \
   curl \
   git \
   bzip2 \
-  xz-utils \
   build-essential \
   xsltproc \
   uuid-dev \
@@ -52,22 +51,6 @@ if [ -d "/etc/nginx/conf.d/" ];then
     cd
   fi
 fi
-
-#Download and install UPX latest version
-UPX_VERSION=$(curl -sS --fail https://github.com/upx/upx/releases | \
-  grep -o '/upx-[a-zA-Z0-9.]*-amd64_linux[.]tar[.]xz' | \
-  sed -e 's~^/upx-~~' -e 's~\-amd64_linux\.tar\.xz$~~' | \
-  sed '/alpha.*/Id' | \
-  sed '/pre.*/Id' | \
-  sed '/beta.*/Id' | \
-  sed '/rc.*/Id' | \
-  sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -g | \
-  tail -n 1)
-wget https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz
-xz -d upx-${UPX_VERSION}-amd64_linux.tar.xz
-tar -xvf upx-${UPX_VERSION}-amd64_linux.tar
-UPX_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*upx-${UPX_VERSION}-amd64_linux*")
-cp -f $UPX_DIR/upx /bin
 
 #Download Jemalloc latest version
 JEMALLOC_VERSION=$(curl -sS --fail https://github.com/jemalloc/jemalloc/releases | \
@@ -176,7 +159,7 @@ NPS_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*incubator-pagespeed
 cd "$NPS_DIR"
 [ -e scripts/format_binary_url.sh ] && PSOL_URL=$(scripts/format_binary_url.sh PSOL_BINARY_URL)
 wget ${PSOL_URL}
-tar -xzvf $(basename ${PSOL_URL})
+tar -xvzf $(basename ${PSOL_URL})
 cd
 
 #Download Nginx Module:Redis latest version
@@ -275,8 +258,6 @@ cd $REDIS_DIR
 make -j`nproc`
 make PREFIX=/usr install -j`nproc`
 strip /usr/bin/redis*
-find /usr/bin -name "redis*" -type f | \
-  xargs upx 
 
 #Build and install Nginx
 cd $NGINX_DIR
@@ -341,8 +322,6 @@ make -j`nproc`
 make install -j`nproc`
 strip /usr/sbin/nginx*
 strip /usr/lib/nginx/modules/*.so
-find /usr/sbin -name "nginx*" -type f | \
-  xargs upx
 cd
 
 #Config System
@@ -489,10 +468,6 @@ fi
 
 #Remove temporary files
 rm -rf \
-  $HOME/upx-${UPX_VERSION}-amd64_linux.tar.xz \
-  $HOME/upx-${UPX_VERSION}-amd64_linux.tar.xz.1 \
-  $HOME/upx-${UPX_VERSION}-amd64_linux.tar \
-  $HOME/upx-${UPX_VERSION}-amd64_linux.tar.1 \
   $HOME/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
   $HOME/jemalloc-${JEMALLOC_VERSION}.tar.bz2.1 \
   $HOME/redis-${REDIS_VERSION}.tar.gz \
@@ -521,7 +496,6 @@ rm -rf \
   $HOME/snm-v${SNM_VERSION}.tar.gz.1 \
   $HOME/build-deps.txt \
   $HOME/run-deps.tar \
-  $UPX_DIR \
   $JEMALLOC_DIR \
   $REDIS_DIR \
   $OPENSSL_DIR \
@@ -536,7 +510,6 @@ rm -rf \
   $ENM_DIR \
   $R2NM_DIR \
   $SNM_DIR \
-  /bin/upx \
   /var/lib/apt/lists/* \
   /usr/sbin/nginx.old \
   /usr/lib/nginx/modules/ngx_http_image_filter_module.so.old \
