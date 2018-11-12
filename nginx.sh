@@ -31,8 +31,13 @@ if [ -f "/etc/redis/redis.conf" ];then
 fi
 
 #Backup Nginx configuration files
-if [ -f "/usr/share/nginx/html/index.html" ];then
-  mv -f /usr/share/nginx/html/index.html /usr/share/nginx/html/index.html_backup
+if [ -d "/usr/share/nginx/html/" ];then
+  find /usr/share/nginx/html -name "index.*" | grep -q "index."
+  if [ $? -eq 0 ];then
+    cd /usr/share/nginx/html
+    rename -f "s/index./backup_index./" index.*
+    cd
+  fi
 fi
 if [ -f "/usr/share/nginx/html/50x.html" ];then
   mv -f /usr/share/nginx/html/50x.html /usr/share/nginx/html/50x.html_backup
@@ -380,11 +385,11 @@ chown redis:adm /var/log/redis
 chown redis:redis /var/run/redis
 chmod 02750 /var/log/redis
 chmod 750 /var/lib/redis
-wget -O /lib/systemd/system/redis-server.service https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/lib/systemd/system/redis-server.service
 wget -O /etc/redis/redis.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/redis/redis.conf
 chown redis:redis /etc/redis/redis.conf
 chmod 640 /etc/redis/redis.conf
 cp -f /etc/redis/redis.conf /etc/redis/redis.conf.default
+wget -O /lib/systemd/system/redis-server.service https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/lib/systemd/system/redis-server.service
 systemctl daemon-reload
 systemctl enable redis-server
 
@@ -409,15 +414,15 @@ touch /var/log/nginx/error.log
 chmod 640 /var/log/nginx/error.log
 chown nginx:adm /var/log/nginx/error.log
 ln -s /usr/lib/nginx/modules /etc/nginx >/dev/null 2>&1
-rm -rf /etc/nginx/html
-wget -O /lib/systemd/system/nginx.service https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/lib/systemd/system/nginx.service
 wget -O /etc/nginx/nginx.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/nginx.conf
 wget -O /etc/nginx/conf.d/default.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/conf.d/default.conf
-wget -O /usr/share/nginx/html/50x.html https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/usr/share/nginx/html/50x.html
-wget -O /usr/share/nginx/html/index.html https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/usr/share/nginx/html/index.html
 cp -f /etc/nginx/nginx.conf /etc/nginx/nginx.conf.default
 cp -f /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
+mv /etc/nginx/html/index.html /usr/share/nginx/html/index.html
+mv /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
+rm -rf /etc/nginx/html
 chown -R nginx:nginx /usr/share/nginx/html
+wget -O /lib/systemd/system/nginx.service https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/lib/systemd/system/nginx.service
 systemctl daemon-reload
 systemctl enable nginx
 
@@ -538,8 +543,12 @@ fi
 systemctl reload redis
 
 #Restore Nginx configuration files
-if [ -f "/usr/share/nginx/html/index.html_backup" ];then
-  mv -f /usr/share/nginx/html/index.html_backup /usr/share/nginx/html/index.html
+find /usr/share/nginx/html -name "backup_index.*" | grep -q "backup_index."
+if [ $? -eq 0 ];then
+  cd /usr/share/nginx/html
+  rm -rf index.html 50x.html
+  rename -f "s/backup_index./index./" backup_index.*
+  cd
 fi
 if [ -f "/usr/share/nginx/html/50x.html_backup" ];then
   mv -f /usr/share/nginx/html/50x.html_backup /usr/share/nginx/html/50x.html
