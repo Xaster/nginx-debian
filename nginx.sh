@@ -381,14 +381,14 @@ mkdir -p \
   /etc/redis \
   /var/log/redis \
   /var/run/redis
-chown redis:adm /var/log/redis
-chown redis:redis /var/run/redis
-chmod 02750 /var/log/redis
-chmod 750 /var/lib/redis
 wget -O /etc/redis/redis.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/redis/redis.conf
 chown redis:redis /etc/redis/redis.conf
 chmod 640 /etc/redis/redis.conf
 cp -f /etc/redis/redis.conf /etc/redis/redis.conf.default
+chown redis:adm /var/log/redis
+chmod 02750 /var/log/redis
+chown redis:redis /var/run/redis
+chmod 750 /var/lib/redis
 wget -O /lib/systemd/system/redis-server.service https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/lib/systemd/system/redis-server.service
 systemctl daemon-reload
 systemctl enable redis-server
@@ -407,21 +407,21 @@ mkdir -p \
   /var/run/nginx \
   /etc/nginx/conf.d \
   /usr/share/nginx/html
+mv /etc/nginx/html/index.html /usr/share/nginx/html/index.html
+mv /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
+rm -rf /etc/nginx/html
+chown -R nginx:nginx /usr/share/nginx/html
+ln -s /usr/lib/nginx/modules /etc/nginx >/dev/null 2>&1
+wget -O /etc/nginx/nginx.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/nginx.conf
+wget -O /etc/nginx/conf.d/default.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/conf.d/default.conf
+cp -f /etc/nginx/nginx.conf /etc/nginx/nginx.conf.default
+cp -f /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
 touch /var/log/nginx/access.log
 chmod 640 /var/log/nginx/access.log
 chown nginx:adm /var/log/nginx/access.log
 touch /var/log/nginx/error.log
 chmod 640 /var/log/nginx/error.log
 chown nginx:adm /var/log/nginx/error.log
-ln -s /usr/lib/nginx/modules /etc/nginx >/dev/null 2>&1
-wget -O /etc/nginx/nginx.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/nginx.conf
-wget -O /etc/nginx/conf.d/default.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/conf.d/default.conf
-cp -f /etc/nginx/nginx.conf /etc/nginx/nginx.conf.default
-cp -f /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
-mv /etc/nginx/html/index.html /usr/share/nginx/html/index.html
-mv /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
-rm -rf /etc/nginx/html
-chown -R nginx:nginx /usr/share/nginx/html
 wget -O /lib/systemd/system/nginx.service https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/lib/systemd/system/nginx.service
 systemctl daemon-reload
 systemctl enable nginx
