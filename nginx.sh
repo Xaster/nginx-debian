@@ -329,7 +329,7 @@ strip /usr/sbin/nginx*
 strip /usr/lib/nginx/modules/*.so
 cd
 
-#Backup run dependencies
+#Backup software and dependencies
 ldd /usr/lib/libjemalloc* \
   /usr/bin/redis* \
   /usr/sbin/nginx* \
@@ -349,9 +349,9 @@ readlink -f $(cat software-deps.txt) | \
 cat software-deps.txt \
   symlink-source.txt | \
   sort -u | \
-  xargs tar -cvpPf soft-package.tar
+  xargs tar -cvpPf software-package.tar
 
-#Config System
+#Config system
 ulimit -n 65535
 ulimit -u 65535
 ulimit -s unlimited
@@ -394,6 +394,7 @@ echo "echo never > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.local
 mkdir -p \
   /etc/redis \
   /var/log/redis \
+  /var/lib/redis \
   /var/run/redis
 adduser  \
   --system  \
@@ -417,10 +418,11 @@ systemctl enable redis-server
 
 #Config Nginx
 mkdir -p \
-  /var/log/nginx \
-  /var/run/nginx \
+  /usr/share/nginx/html \
   /etc/nginx/conf.d \
-  /usr/share/nginx/html
+  /var/log/nginx \
+  /var/cache/nginx \
+  /var/run/nginx
 adduser \
   --system \
   --home /var/cache/nginx \
@@ -429,15 +431,17 @@ adduser \
   --disabled-login \
   --quiet \
   nginx
-mv /etc/nginx/html/index.html /usr/share/nginx/html/index.html
-mv /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
-rm -rf /etc/nginx/html
+mv -f /etc/nginx/html/index.html \
+  /etc/nginx/html/50x.html \
+  /usr/share/nginx/html
+rm -rf /etc/nginx/html \
+  /etc/nginx/nginx.conf
 chown -R nginx:nginx /usr/share/nginx/html
-ln -s /usr/lib/nginx/modules /etc/nginx >/dev/null 2>&1
 wget -O /etc/nginx/nginx.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/nginx.conf
 wget -O /etc/nginx/conf.d/default.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/nginx/conf.d/default.conf
 cp -f /etc/nginx/nginx.conf /etc/nginx/nginx.conf.default
 cp -f /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
+ln -s /usr/lib/nginx/modules /etc/nginx >/dev/null 2>&1
 touch /var/log/nginx/access.log
 chmod 640 /var/log/nginx/access.log
 chown nginx:adm /var/log/nginx/access.log
@@ -449,11 +453,13 @@ systemctl daemon-reload
 systemctl enable nginx
 
 #Remove build dependencies
-apt purge --auto-remove -y $(cat build-deps.txt | grep "Unpacking " | cut -d " " -f 2)
-apt clean
+apt purge --auto-remove -y \
+  $(cat build-deps.txt | \
+  grep "Unpacking " | \
+  cut -d " " -f 2)
 
-#Restore run dependencies
-tar --skip-old-files -xpPf soft-package.tar
+#Restore software and dependencies
+tar --skip-old-files -xpPf software-package.tar
 
 #Start Redis
 systemctl stop redis
@@ -480,6 +486,7 @@ else
 fi
 
 #Remove temporary files
+apt clean
 rm -rf \
   $HOME/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
   $HOME/jemalloc-${JEMALLOC_VERSION}.tar.bz2.1 \
@@ -510,7 +517,7 @@ rm -rf \
   $HOME/build-deps.txt \
   $HOME/software-deps.txt \
   $HOME/symlink-source.txt \
-  $HOME/soft-package.tar \
+  $HOME/software-package.tar \
   $JEMALLOC_DIR \
   $REDIS_DIR \
   $OPENSSL_DIR \
