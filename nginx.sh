@@ -329,6 +329,28 @@ strip /usr/sbin/nginx*
 strip /usr/lib/nginx/modules/*.so
 cd
 
+#Backup run dependencies
+ldd /usr/lib/libjemalloc* \
+  /usr/bin/redis* \
+  /usr/sbin/nginx* \
+  /usr/lib/nginx/modules/*.so | \
+  cut -d ">" -f 2 | \
+  cut -d "(" -f 1 | \
+  cut -d ":" -f 1 | \
+  sed '/linux-vdso.*/d' | \
+  sed '/not a dynamic executable.*/d' | \
+  sed 's/^[ \t]*//g' | \
+  sed 's/[ \t]*$//g' | \
+  sort -u | \
+  tee software-deps.txt
+readlink -f $(cat software-deps.txt) | \
+  sort -u | \
+  tee symlink-source.txt
+cat software-deps.txt \
+  symlink-source.txt | \
+  sort -u | \
+  xargs tar -cvpPf soft-package.tar
+
 #Config System
 ulimit -n 65535
 ulimit -u 65535
@@ -369,6 +391,10 @@ sed -i '/\/sys\/kernel\/mm\/transparent\_hugepage\/enabled.*/d' /etc/rc.local >/
 echo "echo never > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.local
 
 #Config Redis
+mkdir -p \
+  /etc/redis \
+  /var/log/redis \
+  /var/run/redis
 adduser  \
   --system  \
   --home /var/lib/redis \
@@ -377,10 +403,6 @@ adduser  \
   --disabled-login \
   --quiet \
   redis
-mkdir -p \
-  /etc/redis \
-  /var/log/redis \
-  /var/run/redis
 wget -O /etc/redis/redis.conf https://raw.githubusercontent.com/Xaster/nginx-debian/master/config/etc/redis/redis.conf
 chown redis:redis /etc/redis/redis.conf
 chmod 640 /etc/redis/redis.conf
@@ -394,6 +416,11 @@ systemctl daemon-reload
 systemctl enable redis-server
 
 #Config Nginx
+mkdir -p \
+  /var/log/nginx \
+  /var/run/nginx \
+  /etc/nginx/conf.d \
+  /usr/share/nginx/html
 adduser \
   --system \
   --home /var/cache/nginx \
@@ -402,11 +429,6 @@ adduser \
   --disabled-login \
   --quiet \
   nginx
-mkdir -p \
-  /var/log/nginx \
-  /var/run/nginx \
-  /etc/nginx/conf.d \
-  /usr/share/nginx/html
 mv /etc/nginx/html/index.html /usr/share/nginx/html/index.html
 mv /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
 rm -rf /etc/nginx/html
@@ -426,28 +448,12 @@ wget -O /lib/systemd/system/nginx.service https://raw.githubusercontent.com/Xast
 systemctl daemon-reload
 systemctl enable nginx
 
-#Backup run dependencies
-ldd /usr/lib/libjemalloc* \
-  /usr/bin/redis* \
-  /usr/sbin/nginx* \
-  /usr/lib/nginx/modules/*.so | \
-  cut -d ">" -f 2 | \
-  cut -d "(" -f 1 | \
-  sed '/:.*/d' | \
-  sed '/linux-vdso.*/d' | \
-  sed '/not a dynamic executable.*/d' | \
-  sed 's/^[ \t]*//g' | \
-  sed 's/[ \t]*$//g' | \
-  sort -u | \
-  xargs tar -cvhpPf run-deps.tar
-
 #Remove build dependencies
 apt purge --auto-remove -y $(cat build-deps.txt | grep "Unpacking " | cut -d " " -f 2)
-apt install -y tzdata
 apt clean
 
 #Restore run dependencies
-tar --skip-old-files -xpPf run-deps.tar
+tar --skip-old-files -xpPf soft-package.tar
 
 #Start Redis
 systemctl stop redis
@@ -502,7 +508,9 @@ rm -rf \
   $HOME/snm-v${SNM_VERSION}.tar.gz \
   $HOME/snm-v${SNM_VERSION}.tar.gz.1 \
   $HOME/build-deps.txt \
-  $HOME/run-deps.tar \
+  $HOME/software-deps.txt \
+  $HOME/symlink-source.txt \
+  $HOME/soft-package.tar \
   $JEMALLOC_DIR \
   $REDIS_DIR \
   $OPENSSL_DIR \
