@@ -436,6 +436,8 @@ ldd /usr/lib/libjemalloc* \
   sed '/:.*/d' | \
   sed '/linux-vdso.*/d' | \
   sed '/not a dynamic executable.*/d' | \
+  sed 's/^[ \t]*//g' | \
+  sed 's/[ \t]*$//g' | \
   sort -u | \
   xargs tar -cvhpPf run-deps.tar
 
